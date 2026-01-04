@@ -217,44 +217,51 @@ open class RSSelectionMenu<T: Equatable>: UIViewController, UIPopoverPresentatio
     
     /// tableView frame
     fileprivate func setTableViewFrame() {
-        
-        let window =  UIApplication.shared.delegate?.window
-        
         // change border style for formsheet
         if case let .formSheet(size) = menuPresentationStyle {
-            
             tableView?.layer.cornerRadius = 8
-            self.backgroundView.frame = (window??.bounds)!
+
+            let containerBounds: CGRect = view.window?.bounds
+                ?? parentController?.view.window?.bounds
+                ?? UIScreen.main.bounds
+
+            backgroundView.frame = containerBounds
+
             var tableViewSize = CGSize.zero
-            
-            // set size directly if provided
-            if let size = size {
-                tableViewSize = size
-            }
-            else {
-                
-                // set size according to device and orientation
-                if UIDevice.current.userInterfaceIdiom == .phone {
-                
-                    if UIApplication.shared.statusBarOrientation == .portrait {
-                        tableViewSize = CGSize(width: backgroundView.frame.size.width - 80, height: backgroundView.frame.size.height - 260)
-                    }else {
-                        tableViewSize = CGSize(width: backgroundView.frame.size.width - 200, height: backgroundView.frame.size.height - 100)
+
+            if let explicitSize = size {
+                tableViewSize = explicitSize
+            } else {
+                let isPhone = traitCollection.userInterfaceIdiom == .phone
+                let isPortrait: Bool = {
+                    if let orientation = view.window?.windowScene?.interfaceOrientation {
+                        return orientation.isPortrait
+                    } else {
+                        return containerBounds.height >= containerBounds.width
                     }
-                }else {
-                    tableViewSize = CGSize(width: backgroundView.frame.size.width - 300, height: backgroundView.frame.size.height - 400)
+                }()
+
+                if isPhone {
+                    if isPortrait {
+                        tableViewSize = CGSize(width: containerBounds.width - 80, height: containerBounds.height - 260)
+                    } else {
+                        tableViewSize = CGSize(width: containerBounds.width - 200, height: containerBounds.height - 100)
+                    }
+                } else {
+                    tableViewSize = CGSize(width: containerBounds.width - 300, height: containerBounds.height - 400)
                 }
             }
-            
-            self.tableView?.frame.size = tableViewSize
-            self.tableView?.center = self.backgroundView.center
-            
-        }else {
-            self.backgroundView.frame = self.view.bounds
-            self.tableView?.frame = backgroundView.frame
+
+            if let tableView = tableView {
+                tableView.frame.size = tableViewSize
+                tableView.center = backgroundView.center
+            }
+        } else {
+            backgroundView.frame = view.bounds
+            tableView?.frame = backgroundView.frame
         }
     }
-    
+        
     /// Tap gesture
     fileprivate func addTapGesture() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(onBackgroundTapped(sender:)))
